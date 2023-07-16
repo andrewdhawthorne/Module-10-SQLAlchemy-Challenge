@@ -16,10 +16,10 @@ engine = create_engine('sqlite:///Resources/hawaii.sqlite')
 # Database Setup
 #################################################
 
-# reflect an existing database into a new model
+# Reflect an existing database into a new model
 base = automap_base()
 
-# reflect the tables
+# Feflect the tables
 base.prepare(autoload_with=engine)
 
 # Save references to each table
@@ -29,13 +29,11 @@ station = base.classes.station
 # Create our session (link) from Python to the DB
 session = Session(engine)
 
-
 #################################################
 # Flask Setup
 #################################################
 # Create an app
 app = Flask(__name__)
-
 
 #################################################
 # Flask Routes
@@ -52,11 +50,10 @@ def homepage():
         f"/api/v1.0/<start>/<end>"
     )
 
-
 @app.route("/api/v1.0/precipitation")
 def precipitation():
 # Convert the query results from your precipitation analysis (i.e. retrieve only the last 12 months of data) 
-# to a dictionary using date as the key and prcp as the value
+#   to a dictionary using date as the key and prcp as the value
 
     # Create the session 
     session = Session(engine)
@@ -66,7 +63,7 @@ def precipitation():
     closest_date
 
     # Design a query to retrieve the last 12 months of precipitation data and plot the results 
-    # starting from the most recent data point in the database 
+    #   starting from the most recent data point in the database 
 
     # Calculate the date one year from the last date in data set
     first_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
@@ -88,7 +85,6 @@ def precipitation():
     # Return the JSON representation of your dictionary
     return jsonify(prcp_list)
 
-
 @app.route("/api/v1.0/stations")
 def stations(): 
  # Create the session 
@@ -102,7 +98,6 @@ def stations():
 
     # Return a JSON list of stations from the dataset
     return jsonify(total_stations)
-
 
 @app.route("/api/v1.0/tobs")
 def tobs(): 
@@ -128,31 +123,43 @@ def tobs():
     # Return a JSON list of temperature observations for the previous year
     return jsonify(twelve_mo)
 
-
 @app.route("/api/v1.0/<start>")
 @app.route("/api/v1.0/<start>/<end>")
 def start_end(): 
 # Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range 
-
-    # Create the session 
+# Use most active station ''USC00519281'
+# Create the session 
     session = Session(engine)
 
-    most_active_stations = session.query(measurement.station, func.count(measurement.station)).\
-                    group_by(measurement.station).\
-                    order_by(func.count(measurement.station).desc()).all()
-    most_active_stations
+    # For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
+    specific_start = '2017-01-28'
+    
+    query1 = session.query[func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)].\
+        filter(measurement.station == 'USC00519281').\
+        filter(measurement.date >= specific_start).all()
 
+     # Return a JSON list of TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
+    return jsonify(query1)
 
-    min_temp = session.query(func.min(measurement.tobs)).filter(measurement.station == 'USC00519281').first()
-    max_temp = session.query(func.max(measurement.tobs)).filter(measurement.station == 'USC00519281').first()
-    avg_temp = session.query(func.avg(measurement.tobs)).filter(measurement.station == 'USC00519281').first()
+ # Close the session                   
+    session.close() 
 
-# For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
+# Create the session 
+    session = Session(engine)
+    # For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive        return jsonify(start_end_list)
+    specific_end = '2017-07-10'
 
+    query2 = session.query(measurement.tobs).\
+        filter(measurement.station == 'USC00519281').\
+        filter(measurement.date >= specific_start).all()
+        filter(measurement.date <= specific_end).all()
 
+ # Return a JSON list of temperature observations for the previous year
+    return jsonify(query2)
 
+  # Close the session                   
+    session.close()
 
-
-
-
-# For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive
+# Define main branch 
+if __name__ == "__main__":
+    app.run(debug = True)
