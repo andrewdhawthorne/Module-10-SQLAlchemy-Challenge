@@ -52,6 +52,7 @@ def homepage():
         f"/api/v1.0/<start>/<end>"
     )
 
+
 @app.route("/api/v1.0/precipitation")
 def precipitation():
 # Convert the query results from your precipitation analysis (i.e. retrieve only the last 12 months of data) 
@@ -86,3 +87,72 @@ def precipitation():
 
     # Return the JSON representation of your dictionary
     return jsonify(prcp_list)
+
+
+@app.route("/api/v1.0/stations")
+def stations(): 
+ # Create the session 
+    session = Session(engine)
+
+    # Design a query to calculate the total number of stations in the dataset
+    total_stations = session.query(func.count(station.station)).first()
+
+     # Close the session                   
+    session.close()
+
+    # Return a JSON list of stations from the dataset
+    return jsonify(total_stations)
+
+
+@app.route("/api/v1.0/tobs")
+def tobs(): 
+# Query the dates and temperature observations of the most-active station for the previous year of data
+
+    # Create the session 
+    session = Session(engine)
+
+    first_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    most_active_stations = session.query(measurement.station, func.count(measurement.station)).\
+                    group_by(measurement.station).\
+                    order_by(func.count(measurement.station).desc()).all()
+    most_active_stations
+
+    twelve_mo = session.query(measurement.tobs).\
+        filter(measurement.station == 'USC00519281').\
+        filter(measurement.date >= first_date).all()
+    
+    # Close the session                   
+    session.close()
+
+    # Return a JSON list of temperature observations for the previous year
+    return jsonify(twelve_mo)
+
+
+@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(): 
+# Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range 
+
+    # Create the session 
+    session = Session(engine)
+
+    most_active_stations = session.query(measurement.station, func.count(measurement.station)).\
+                    group_by(measurement.station).\
+                    order_by(func.count(measurement.station).desc()).all()
+    most_active_stations
+
+
+    min_temp = session.query(func.min(measurement.tobs)).filter(measurement.station == 'USC00519281').first()
+    max_temp = session.query(func.max(measurement.tobs)).filter(measurement.station == 'USC00519281').first()
+    avg_temp = session.query(func.avg(measurement.tobs)).filter(measurement.station == 'USC00519281').first()
+
+# For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
+
+
+
+
+
+
+
+# For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive
