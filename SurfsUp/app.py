@@ -125,40 +125,38 @@ def tobs():
 
 @app.route("/api/v1.0/<start>")
 @app.route("/api/v1.0/<start>/<end>")
-def start_end(): 
+def start_end(start=None, end=None): 
 # Return a JSON list of the minimum temperature, the average temperature, and the maximum temperature for a specified start or start-end range 
-# Use most active station ''USC00519281'
+
 # Create the session 
     session = Session(engine)
 
     # For a specified start, calculate TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
-    specific_start = '2017-01-28'
-    
-    query1 = session.query[func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)].\
-        filter(measurement.station == 'USC00519281').\
-        filter(measurement.date >= specific_start).all()
+    # Query for the minimun, average, and maxium temperature 
+    sel=[func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)]
 
-     # Return a JSON list of TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
-    return jsonify(query1)
+    # Use if/else statement to loop through data from start date to most recent date 
+    if end == None:
+        specific_start = session.query(*sel).\
+            filter(measurement.date >= start).all()
+        
+        # Returns list of tuples, which need to be converted into a regular list 
+        specific_start_list = list(np.ravel(specific_start)) 
+        
+        # Return a JSON list of TMIN, TAVG, and TMAX for all the dates greater than or equal to the start date
+        return jsonify(specific_start_list)
 
- # Close the session                   
-    session.close() 
+    # For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive        
+    else: 
+       specific_end = session.query(*sel).\
+            filter(measurement.date >= start).\
+            filter(measurement.date <= end).all()
 
-# Create the session 
-    session = Session(engine)
-    # For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive        return jsonify(start_end_list)
-    specific_end = '2017-07-10'
+    # Return a JSON list of temperature observations for the previous year
+    return jsonify(specific_end)
 
-    query2 = session.query(measurement.tobs).\
-        filter(measurement.station == 'USC00519281').\
-        filter(measurement.date >= specific_start).all()
-        filter(measurement.date <= specific_end).all()
-
- # Return a JSON list of temperature observations for the previous year
-    return jsonify(query2)
-
-  # Close the session                   
-    session.close()
+# Close the session
+session.close()
 
 # Define main branch 
 if __name__ == "__main__":
