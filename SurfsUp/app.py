@@ -106,13 +106,17 @@ def tobs():
     # Create the session 
     session = Session(engine)
 
+    # Calculate the date one year from the last date in data set
     first_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
 
+    # Design a query to find the most active stations (i.e. which stations have the most rows?)
+    # List the stations and their counts in descending order
     most_active_stations = session.query(measurement.station, func.count(measurement.station)).\
                     group_by(measurement.station).\
                     order_by(func.count(measurement.station).desc()).all()
     most_active_stations
 
+    # Using the most active station id query the last 12 months of temperature observation data for this station
     twelve_mo = session.query(measurement.tobs).\
         filter(measurement.station == 'USC00519281').\
         filter(measurement.date >= first_date).all()
